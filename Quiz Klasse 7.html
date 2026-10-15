@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiz Klasse 7</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
+<style>
+:root{--bg:#eef2fb;--ink:#14213d;--card:#fff;--accent:#2f4bff;--on-accent:#fff;--sun:#ffc933;--ok:#1a9d5c;--bad:#d6334a;--muted:#5b6784;--line:#d5dcf0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1630;--ink:#eef1fb;--card:#19224a;--accent:#8196ff;--on-accent:#0f1630;--sun:#ffc933;--ok:#3ecf8e;--bad:#ff6b81;--muted:#a3adcc;--line:#2c3866}}
+:root[data-theme="dark"]{--bg:#0f1630;--ink:#eef1fb;--card:#19224a;--accent:#8196ff;--on-accent:#0f1630;--ok:#3ecf8e;--bad:#ff6b81;--muted:#a3adcc;--line:#2c3866}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:500;line-height:1.4}
+main{max-width:520px;margin:0 auto;padding:20px 18px 32px}
+h1{font-size:2.4rem;line-height:1.05;margin:24px 0 8px;font-weight:800}
+h2{font-size:1.45rem;line-height:1.25;margin:18px 0 20px;font-weight:700}
+p{color:var(--muted);margin:0 0 16px}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.chip{border:2px solid var(--line);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:999px;font-weight:700}
+.chip[aria-pressed="true"]{background:var(--sun);border-color:var(--sun);color:#14213d}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.cta{width:100%;border:0;border-radius:16px;padding:16px;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:1.1rem}
+.best{margin-top:16px;text-align:center;color:var(--muted)}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.meta{display:flex;justify-content:space-between;color:var(--muted);margin:10px 0 0;font-size:.95rem}
+.opt{display:block;width:100%;text-align:left;margin:0 0 10px;padding:15px 16px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font-weight:600;font-size:1.05rem}
+.opt.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--card))}
+.opt.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,var(--card))}
+.fact{background:var(--card);border-left:5px solid var(--sun);padding:12px 14px;border-radius:10px;margin:6px 0 16px}
+.score{font-size:5rem;font-weight:800;line-height:1;margin:20px 0 4px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<section id="start">
+  <h1>Klasse 7: Wie fit bist du?</h1>
+  <p>Wähle Thema und Rundenlänge. Nach jeder Antwort lernst du etwas dazu.</p>
+  <div class="chips" id="cats"></div>
+  <p style="margin:0">Wie viele Fragen?</p>
+  <div class="chips" id="lens"></div>
+  <p id="lenhint" style="margin:-12px 0 20px;font-size:.9rem"></p>
+  <button class="cta" id="go">Runde starten</button>
+  <div class="best" id="best"></div>
+</section>
+<section id="quiz" hidden>
+  <div class="bar"><i id="prog"></i></div>
+  <div class="meta"><span id="count"></span><span id="pts"></span></div>
+  <h2 id="q"></h2>
+  <div id="opts"></div>
+  <div class="fact" id="fact" hidden></div>
+  <button class="cta" id="next" hidden>Weiter</button>
+</section>
+<section id="end" hidden>
+  <p id="endlabel" style="margin-top:28px">Dein Ergebnis</p>
+  <div class="score" id="final"></div>
+  <p id="verdict"></p>
+  <div class="best" id="newbest" style="margin:0 0 20px"></div>
+  <button class="cta" id="again">Nochmal spielen</button>
+</section>
+</main>
+<script>
+var RAW=[
+["D","Welche Wortart ist „schnell“ in „der schnelle Hund“?","Nomen|Adjektiv|Verb|Adverb",1,"Adjektive beschreiben Nomen."],
+["D","Welcher Satz steht im Perfekt?","Ich lese ein Buch.|Ich habe ein Buch gelesen.|Ich las ein Buch.|Ich werde ein Buch lesen.",1,"Perfekt = haben/sein + Partizip II."],
+["D","Was ist das Subjekt: „Der Lehrer lobt die Klasse.“?","Der Lehrer|lobt|die Klasse|Klasse",0,"Frage: Wer lobt?"],
+["D","Welcher Fall ist „dem Hund“ in „Ich gebe dem Hund Futter.“?","Nominativ|Genitiv|Dativ|Akkusativ",2,"Frage: Wem gebe ich?"],
+["D","Welche Schreibung ist richtig?","Standart|Standard|Standhard|Stantard",1,""],
+["D","Welcher Satz ist richtig?","Ich hoffe, das du kommst.|Ich hoffe, dass du kommst.|Ich hoffe dass, du kommst.|Ich hoffe, daß du kommst.",1,"„dass“ ist eine Konjunktion, „das“ lässt sich durch „dieses“ ersetzen."],
+["D","Was ist ein Adverb?","Ein Wort für Personen|Ein Wort, das z. B. Ort oder Zeit angibt (hier, gestern)|Ein Wort für Gefühle|Ein Artikel",1,""],
+["D","Was ist der Plural von „der Atlas“?","Atlasse|Atlanten|Atlas|Atlasen",1,""],
+["D","Welche Steigerung von „gut“ ist richtig?","gut – guter – am gutesten|gut – besser – am besten|gut – besser – am gutesten|gut – bessere – am besten",1,"Unregelmäßige Steigerung."],
+["D","Was ist ein Satzgefüge?","Hauptsatz und Nebensatz|Zwei Hauptsätze|Ein einzelnes Wort|Nur ein Nebensatz",0,""],
+["D","Welches Wort ist ein Nomen?","laufen|schön|Freude|schnell",2,"Nomen schreibt man groß."],
+["D","Was ist das Präteritum von „gehen“?","ging|gegangen|gehte|geht",0,""],
+["D","Welcher Fall fragt „Wessen?“","Nominativ|Genitiv|Dativ|Akkusativ",1,""],
+["D","„Er ist stark wie ein Bär.“ Welches Stilmittel ist das?","Vergleich|Metapher|Personifikation|Ironie",0,"Vergleiche enthalten „wie“ oder „als“."],
+["D","„Der Wind flüstert durch die Bäume.“ Welches Stilmittel ist das?","Personifikation|Vergleich|Übertreibung|Reim",0,"Dinge handeln wie Menschen."],
+["D","Was steht vor „aber“ zwischen zwei Hauptsätzen?","Punkt|Komma|Doppelpunkt|nichts",1,""],
+["D","Welche Schreibung ist richtig?","vielleicht|vieleicht|filleicht|vilaicht",0,""],
+["D","Was ist das Prädikat im Satz?","Das Verb, das sagt, was geschieht|Das Subjekt|Ein Adjektiv|Eine Zeitangabe",0,""],
+["D","Welches Wort bedeutet fast dasselbe wie „klug“?","dumm|intelligent|langsam|laut",1,"Das ist ein Synonym."],
+["D","Was ist das Gegenteil von „mutig“?","tapfer|feige|stark|schnell",1,"Das ist ein Antonym."],
+["D","Ergänze: „Gestern ___ ich im Kino.“","war|waren|wäre|bin",0,""],
+["D","Welcher Fall ist „den Ball“ in „Sie wirft den Ball.“?","Akkusativ|Dativ|Genitiv|Nominativ",0,"Frage: Wen oder was?"],
+["D","Was ist das Partizip II von „schreiben“?","geschrieben|geschreibt|schriebt|schreibend",0,""],
+["D","Welche Schreibung ist richtig?","Das Schwimmen macht Spaß.|Das schwimmen macht Spaß.|das Schwimmen macht Spaß.|Das schwimmen macht spaß.",0,"Mit Artikel wird das Verb zum Nomen."],
+["D","Wo steht das Verb in einem Hauptsatz (Aussage)?","an zweiter Stelle|am Ende|am Anfang|überall",0,""],
+["D","Wo steht das Verb meist in einem Nebensatz?","am Ende|an zweiter Stelle|am Anfang|in der Mitte",0,""],
+["D","Welche Konjunktion nennt einen Grund?","obwohl|weil|damit|nachdem",1,""],
+["D","Was ist „sie“ in „Anna kommt. Sie lacht.“?","Personalpronomen|Artikel|Adjektiv|Verb",0,""],
+["D","Welche Wortart ist „unter“?","Präposition|Konjunktion|Artikel|Adverb",0,""],
+["D","Welcher Fall folgt auf „wegen“ (Standardsprache)?","Genitiv|Dativ|Akkusativ|Nominativ",0,"wegen des Regens"],
+["D","Welcher Satz steht im Futur I?","Ich lese morgen.|Ich werde morgen lesen.|Ich habe gelesen.|Ich las.",1,"Futur I = werden + Infinitiv."],
+["D","Welche Schreibung ist richtig?","Strasse|Straße|Straßse|Straase",1,"ß steht nach langem Vokal."],
+["D","Was ist ein Nebensatz?","Ein Satz, der nicht allein stehen kann|Ein sehr kurzer Satz|Ein Fragesatz|Ein Satz ohne Verb",0,""],
+["D","Was steht in Anführungszeichen?","Das wörtlich Gesprochene|Der ganze Satz|Das Verb|Nichts",0,""],
+["D","Welches Wort ist zusammengesetzt?","Haustür|schön|laufen|und",0,"Haus + Tür"],
+["D","Welcher Artikel passt zu „Mädchen“?","der|die|das|den",2,""],
+["D","Was ist der Plural von „das Kind“?","Kinder|Kinde|Kinds|Kindern",0,""],
+["D","Welcher Fall folgt auf „mit“?","Dativ|Akkusativ|Genitiv|Nominativ",0,"mit dem Auto"],
+["D","Was ist typisch für eine Fabel?","Tiere handeln wie Menschen, am Ende gibt es eine Lehre|Es geht um den Weltraum|Sie ist ein Brief|Sie hat keine Handlung",0,""],
+["D","Was ist eine Ballade?","Ein Erzählgedicht|Ein Zeitungsartikel|Ein Brief|Ein Rezept",0,""],
+["D","Wer erzählt: „Ich ging nach Hause.“?","Ein Ich-Erzähler|Ein Er-Erzähler|Ein allwissender Erzähler|Ein Du-Erzähler",0,""],
+["D","Welcher Reim ist „Haus – Maus – Wald – bald“?","Paarreim|Kreuzreim|umarmender Reim|Schweifreim",0,"aabb"],
+["D","Wie nennt man „Meer“ und „mehr“?","Homophone|Synonyme|Antonyme|Reimwörter",0,"Gleich gesprochen, anders geschrieben."],
+["D","Wie heißt es richtig?","du läufst|du laufst|du läuft|du laufest",0,""],
+["D","Was ist der Infinitiv von „sie gingen“?","gehen|gang|gehn|gegangen",0,""],
+["D","Wann steht ein Doppelpunkt?","Vor einer Aufzählung oder wörtlichen Rede|Am Satzende|Nach jeder Frage|Nie",0,""],
+["D","Welche Satzart ist „Komm bitte her!“?","Aufforderungssatz|Fragesatz|Aussagesatz|Wunschsatz",0,""],
+["D","Welche Frage ermittelt die Ortsangabe?","Wo?|Wann?|Warum?|Wie?",0,""],
+["D","Wie viele Fälle gibt es im Deutschen?","3|4|5|6",1,"Nominativ, Genitiv, Dativ, Akkusativ"],
+["D","Welche Reihe enthält nur Verben?","singen, laufen, denken|Tisch, Stuhl, Haus|schön, groß, klein|und, oder, aber",0,""],
+["F","Was heißt „Bonjour“?","Guten Tag|Gute Nacht|Tschüss|Danke",0,""],
+["F","Was heißt „Au revoir“?","Auf Wiedersehen|Hallo|Bitte|Entschuldigung",0,""],
+["F","Wie heißt „ich bin“?","je suis|j'ai|je vais|je fais",0,"être = sein"],
+["F","Was heißt „j'ai“?","ich habe|ich bin|ich gehe|ich mache",0,"avoir = haben"],
+["F","Wie heißt die Zahl 7?","sept|six|huit|neuf",0,""],
+["F","Wie heißt die Zahl 12?","douze|onze|treize|dix",0,""],
+["F","Wie heißt die Zahl 20?","vingt|trente|dix|quinze",0,""],
+["F","Ergänze: „___ livre“ (das Buch)","le|la|les|l'",0,"Livre ist männlich."],
+["F","Ergänze: „___ amis“ (die Freunde)","les|le|la|un",0,""],
+["F","Was heißt „il est“?","er ist|er hat|er geht|er macht",0,""],
+["F","Ergänze: „Nous ___ (parler)“","parlons|parlez|parlent|parle",0,""],
+["F","Ergänze: „Vous ___ (être)“","êtes|sommes|sont|est",0,""],
+["F","Ergänze: „Ils ___ (avoir)“","ont|avons|avez|a",0,""],
+["F","Ergänze: „Tu ___ (aller)“","vas|va|vais|allez",0,""],
+["F","Ergänze: „Je ___ (faire) du sport.“","fais|fait|faisons|faites",0,""],
+["F","Wie fragt man „Wie heißt du?“","Comment tu t'appelles ?|Où tu habites ?|Quel âge as-tu ?|Qui est-ce ?",0,""],
+["F","Was heißt „Quel âge as-tu ?“","Wie alt bist du?|Wo wohnst du?|Wie geht's?|Was machst du?",0,""],
+["F","Was heißt „Où habites-tu ?“","Wo wohnst du?|Wer bist du?|Wie spät ist es?|Wann kommst du?",0,""],
+["F","Was heißt „Je ne parle pas.“?","Ich spreche nicht.|Ich spreche.|Ich sprach.|Ich werde sprechen.",0,""],
+["F","Wie lautet die Verneinung?","ne … pas|ni … ni|ne … que|pas … ne",0,"Das Verb steht dazwischen."],
+["F","Was heißt „noir“?","schwarz|weiß|rot|grün",0,""],
+["F","Was heißt „rot“ auf Französisch?","rouge|bleu|vert|jaune",0,""],
+["F","Wie heißt „Montag“?","lundi|mardi|mercredi|jeudi",0,""],
+["F","Was heißt „samedi“?","Samstag|Sonntag|Freitag|Donnerstag",0,""],
+["F","Was heißt „janvier“?","Januar|Juli|Juni|Februar",0,""],
+["F","Was heißt „Quelle heure est-il ?“","Wie spät ist es?|Welcher Tag ist heute?|Wie ist das Wetter?|Wer ist da?",0,""],
+["F","Was heißt „la mère“?","die Mutter|der Vater|die Schwester|der Bruder",0,""],
+["F","Was heißt „le frère“?","der Bruder|die Schwester|der Onkel|der Sohn",0,""],
+["F","Ergänze: „___ sœur“ (meine Schwester)","ma|mon|mes|ta",0,"sœur ist weiblich."],
+["F","Was heißt „mes amis“?","meine Freunde|mein Freund|deine Freunde|seine Freunde",0,""],
+["F","Was heißt „le pain“?","das Brot|der Käse|das Wasser|die Milch",0,""],
+["F","Was heißt „l'eau“?","das Wasser|die Milch|der Saft|der Wein",0,""],
+["F","Was heißt „Je voudrais …“?","Ich möchte …|Ich war …|Ich habe …|Ich gehe …",0,"Höfliche Bestellform."],
+["F","Was heißt „Je vais jouer.“?","Ich werde spielen.|Ich habe gespielt.|Ich spiele nicht.|Ich spielte.",0,"Futur proche: aller + Infinitiv."],
+["F","Was heißt „J'ai joué.“?","Ich habe gespielt.|Ich werde spielen.|Ich spiele.|Ich spielte nicht.",0,"Passé composé mit avoir."],
+["F","Was ist das Participe passé von „finir“?","fini|finé|finu|finis",0,""],
+["F","Was heißt „Elle est allée.“?","Sie ist gegangen.|Sie geht.|Sie wird gehen.|Sie hat gesehen.",0,"aller bildet das Passé composé mit être."],
+["F","Ergänze: „Je vais ___ Paris.“","à|en|de|sur",0,"Bei Städten: à."],
+["F","Ergänze: „Je viens ___ Allemagne.“","d'|de la|du|des",0,"venir de"],
+["F","Was heißt „Il pleut.“?","Es regnet.|Es schneit.|Es ist heiß.|Es ist kalt.",0,""],
+["F","Was heißt „Il fait chaud.“?","Es ist heiß.|Es ist kalt.|Es regnet.|Es ist windig.",0,""],
+["F","Was heißt „au café“?","im Café|im Kino|in der Schule|im Park",0,"à + le = au"],
+["F","Was heißt „à la maison“?","zu Hause|in der Stadt|im Garten|in der Schule",0,""],
+["F","Was heißt „le pantalon“?","die Hose|das Hemd|der Schuh|die Mütze",0,""],
+["F","Was heißt „les chaussures“?","die Schuhe|die Socken|die Hosen|die Hüte",0,""],
+["F","Was heißt „pourquoi“?","warum|wann|wo|wer",0,""],
+["F","Was heißt „quand“?","wann|wo|wie|warum",0,""],
+["F","Was heißt „Combien ça coûte ?“","Wie viel kostet das?|Wie heißt das?|Wo ist das?|Wann ist das?",0,""],
+["F","Was heißt „S'il vous plaît“?","bitte|danke|Entschuldigung|gern geschehen",0,""],
+["F","Was sagt Léa mit „Je m'appelle Léa.“?","Ich heiße Léa.|Ich mag Léa.|Ich rufe Léa an.|Ich bin Léas Freundin.",0,"s'appeler = heißen"]
+];
+var CN={D:"Deutsch",F:"Französisch"};
+var Q=RAW.map(function(r){return[CN[r[0]],r[1],r[2].split("|"),r[3],r[4]]});
+function R(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function mk(q,a,w,f){var o=[String(a)],k=1;w.forEach(function(x){x=String(x);if(o.indexOf(x)<0)o.push(x)});while(o.length<4){var x=String(+a+k++);if(o.indexOf(x)<0)o.push(x)}return["Mathe",q,o.slice(0,4),0,f]}
+var G=[
+function(){var a=R(-12,12),b=R(-12,12);return mk("("+a+") + ("+b+") = ?",a+b,[-(a+b),a-b,a+b+2],"Gleiche Vorzeichen: addieren. Verschiedene: subtrahieren.")},
+function(){var a=R(2,9)*(R(0,1)?1:-1),b=R(2,9)*(R(0,1)?1:-1);return mk("("+a+") · ("+b+") = ?",a*b,[-a*b,a+b,a*b+a],"Gleiche Vorzeichen: Plus. Verschiedene: Minus.")},
+function(){var p=[5,10,20,25,50][R(0,4)],g=R(2,15)*20;return mk(p+" % von "+g+" = ?",g*p/100,[g*p/10,g+p,g-g*p/100],"Prozentwert = Grundwert · Prozentsatz.")},
+function(){var p=R(2,9),a=R(2,6),b=a+R(2,6);return mk(a+" Hefte kosten "+a*p+" €. Wie viel kosten "+b+" Hefte?",b*p+" €",[(b+p)+" €",(a*p+b)+" €",(b*p+p)+" €"],"Erst den Preis für 1 Heft berechnen (Dreisatz).")},
+function(){var x=R(2,9),a=R(2,6),b=R(1,12);return mk("Löse: "+a+"x + "+b+" = "+(a*x+b),"x = "+x,["x = "+(x+1),"x = "+(x-1),"x = "+(a*x+b-a)],"Erst "+b+" subtrahieren, dann durch "+a+" teilen.")},
+function(){var x=R(30,80),y=R(30,80);return mk("Im Dreieck ist α = "+x+"° und β = "+y+"°. Wie groß ist γ?",(180-x-y)+"°",[(180-x)+"°",(360-x-y)+"°",(90-x)+"°"],"Die Winkelsumme im Dreieck ist 180°.")},
+function(){var a=R(3,12),b=R(3,12);while(b===a)b=R(3,12);return mk("Ein Rechteck ist "+a+" cm lang und "+b+" cm breit. Wie groß ist der Umfang?",2*(a+b)+" cm",[a*b+" cm",(a+b)+" cm",2*a*b+" cm"],"Umfang u = 2 · (a + b).")},
+function(){var a=R(3,12),b=R(3,12);while(b===a)b=R(3,12);return mk("Ein Rechteck ist "+a+" cm lang und "+b+" cm breit. Wie groß ist der Flächeninhalt?",a*b+" cm²",[2*(a+b)+" cm²",(a+b)+" cm²",a*b+" cm"],"Fläche A = a · b.")},
+function(){var b=[2,3,4,5,10][R(0,4)],a=R(1,b-1),n=b*R(2,12);return mk(a+"/"+b+" von "+n+" = ?",n/b*a,[n/b,n/b*a+a,n/b*(a+1)],"Erst durch den Nenner teilen, dann mal den Zähler.")},
+function(){var x=R(2,9),y=R(2,9),z=R(1,x+y-1);return mk(x+"a + "+y+"a − "+z+"a",(x+y-z)+"a",[(x+y+z)+"a",(x+y-z)+"a²",(x+y-z+1)+"a"],"Nur die Zahlen vor dem a zusammenrechnen.")},
+function(){var n=R(6,15);return mk(n+"² = ?",n*n,[n*2,n*n+n,n*n-n],"n² bedeutet n · n.")},
+function(){var a=R(-9,9),b=R(1,9);return mk("("+a+") − (−"+b+") = ?",a+b,[a-b,-(a+b),a+b+1],"Minus minus wird zu plus.")},
+function(){var m=R(5,15),d=R(1,4);return mk("Wie groß ist der Mittelwert von "+m+", "+(m+d)+" und "+(m-d)+"?",m,[m+d,m-d,m+1],"Mittelwert = Summe : Anzahl.")}
+];
+function genMath(n){var out=[],seen={},t=0,g=R(0,G.length-1);while(out.length<n&&t++<n*20){var q=G[g++%G.length]();if(!seen[q[1]]){seen[q[1]]=1;out.push(q)}}return out}
+var $=function(i){return document.getElementById(i)};
+var cat="Alle",round=[],i=0,pts=0,done=false,len=10,KEY="quiz3-best";
+function load(){try{return +localStorage.getItem(KEY)||0}catch(e){return 0}}
+function save(v){try{localStorage.setItem(KEY,v)}catch(e){}}
+function show(id){["start","quiz","end"].forEach(function(s){$(s).hidden=s!==id})}
+function bestText(){var b=load();$("best").textContent=b?"Dein Rekord: "+b+" Punkte":""}
+var cats=["Alle","Mathe","Deutsch","Französisch"];
+cats.forEach(function(c){var b=document.createElement("button");b.className="chip";b.textContent=c;b.setAttribute("aria-pressed",c===cat);
+b.onclick=function(){cat=c;[].forEach.call($("cats").children,function(x){x.setAttribute("aria-pressed",x.textContent===c)});renderLens()};$("cats").appendChild(b)});
+function shuffle(a){a=a.slice();for(var n=a.length-1;n>0;n--){var j=Math.floor(Math.random()*(n+1));var t=a[n];a[n]=a[j];a[j]=t}return a}
+function poolSize(){return cat==="Mathe"||cat==="Alle"?999:Q.filter(function(q){return cat==="Alle"||q[0]===cat}).length}
+function renderLens(){var n=poolSize(),box=$("lens"),vals=n<10?[n]:[10,20,30,50],ok=[];box.innerHTML="";
+vals.forEach(function(v){var b=document.createElement("button");b.className="chip";b.textContent=n<10?"Alle "+n:v;b.dataset.v=v;if(v>n)b.disabled=true;else ok.push(v);b.onclick=function(){len=v;renderLens()};box.appendChild(b)});
+if(ok.indexOf(len)<0)len=ok.indexOf(10)>=0?10:ok[0];
+[].forEach.call(box.children,function(b){b.setAttribute("aria-pressed",+b.dataset.v===len&&!b.disabled)});
+$("lenhint").textContent=n<50?"Hier gibt es "+n+" Fragen. Mehr folgen bald.":""}
+function start(){var pool=Q.filter(function(q){return cat==="Alle"||q[0]===cat}),m=cat==="Mathe"?len:cat==="Alle"?Math.round(len/3):0;round=shuffle(shuffle(pool).slice(0,len-m).concat(genMath(m)));i=0;pts=0;show("quiz");ask()}
+function ask(){done=false;var q=round[i];$("count").textContent="Frage "+(i+1)+" von "+round.length;$("pts").textContent=pts+" Punkte";
+$("prog").style.width=(i/round.length*100)+"%";$("q").textContent=q[1];$("fact").hidden=true;$("next").hidden=true;$("opts").innerHTML="";
+var order=shuffle([0,1,2,3]);order.forEach(function(k){var b=document.createElement("button");b.className="opt";b.textContent=q[2][k];b.onclick=function(){pick(b,k)};b.dataset.k=k;$("opts").appendChild(b)})}
+function pick(btn,k){if(done)return;done=true;var q=round[i];if(k===q[3])pts++;
+[].forEach.call($("opts").children,function(b){if(+b.dataset.k===q[3])b.classList.add("ok");else if(b===btn)b.classList.add("bad")});
+$("pts").textContent=pts+" Punkte";$("fact").textContent=(k===q[3]?"Richtig! ":"Leider falsch. ")+q[4];$("fact").hidden=false;
+$("next").textContent=i===round.length-1?"Ergebnis ansehen":"Weiter";$("next").hidden=false;$("next").focus()}
+function finish(){$("prog").style.width="100%";show("end");var n=round.length;$("final").textContent=pts+" / "+n;
+var r=pts/n;$("verdict").textContent=r===1?"Perfekt! Kein Fehler.":r>=.8?"Stark! Du bist richtig fit.":r>=.5?"Solide. Eine Runde noch?":"Da geht noch was. Jede Runde macht dich besser.";
+var b=load();if(pts>b){save(pts);$("newbest").textContent="Neuer Rekord!"}else{$("newbest").textContent="Rekord: "+b+" Punkte"}bestText()}
+$("go").onclick=start;$("again").onclick=function(){show("start")};
+$("next").onclick=function(){i++;if(i<round.length)ask();else finish()};
+bestText();renderLens();
+</script>
+</body>
+</html>
